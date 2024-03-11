@@ -27,3 +27,18 @@ variable "dynamodb_table_arn" {
   description = "The ARN of the DynamoDB table that the Lambda function will access"
   type        = string
 }
+
+variable "dynamodb_table_name" {
+  description = "The name of the DynamoDB table that the Lambda function will access"
+  type        = string
+}
+
+variable "sqs_queue_arn" {
+  description = "The ARN of the SQS queue that the Lambda function will access"
+  type        = string
+}
+
+variable "sqs_queue_url" {
+  description = "The URL of the SQS queue that the Lambda function will access"
+  type        = string
+}

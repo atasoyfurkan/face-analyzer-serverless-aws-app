@@ -12,6 +12,13 @@ resource "aws_lambda_function" "image_upload_handler" {
   role             = aws_iam_role.lambda_exec_role.arn
   filename         = data.archive_file.image_upload_handler.output_path
   source_code_hash = data.archive_file.image_upload_handler.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME    = var.dynamodb_table_name
+      SQS_QUEUE_URL = var.sqs_queue_url
+    }
+  }
 }
 
 resource "aws_iam_role" "lambda_exec_role" {
@@ -59,4 +66,22 @@ data "aws_iam_policy_document" "dynamodb_access_policy" {
     actions   = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:UpdateItem"]
     resources = ["${var.dynamodb_table_arn}"]
   }
+}
+
+# Lambda access to SQS
+resource "aws_iam_policy" "lambda_sqs_access" {
+  name   = "${var.function_name}_sqs_access"
+  policy = data.aws_iam_policy_document.lambda_sqs_access_policy.json
+}
+
+data "aws_iam_policy_document" "lambda_sqs_access_policy" {
+  statement {
+    actions   = ["sqs:SendMessage"]
+    resources = [var.sqs_queue_arn]
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_sqs_access_attachment" {
+  role       = aws_iam_role.lambda_exec_role.id
+  policy_arn = aws_iam_policy.lambda_sqs_access.arn
 }

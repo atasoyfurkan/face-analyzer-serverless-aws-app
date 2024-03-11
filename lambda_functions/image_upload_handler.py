@@ -1,3 +1,4 @@
+import os
 import json
 import boto3
 from botocore.exceptions import ClientError
@@ -5,17 +6,29 @@ from datetime import datetime
 import logging
 
 logger = logging.getLogger()
+LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'WARNING')
+logger.setLevel(logging.getLevelName(LOGGING_LEVEL))
 
-# Initialize clients outside the handler to take advantage of connection reuse
 dynamodb = boto3.resource('dynamodb')
 s3_client = boto3.client('s3')
+sqs_client = boto3.client('sqs')
 
-TABLE_NAME = 'FaceAnalyzer-ImageData'
+
+def get_env_variables():
+    TABLE_NAME = os.environ['TABLE_NAME']
+    SQS_QUEUE_URL = os.environ['SQS_QUEUE_URL']
+
+    if not TABLE_NAME or not SQS_QUEUE_URL:
+        raise ValueError("Environment variables TABLE_NAME and SQS_QUEUE_URL are required.")
+
+    return TABLE_NAME, SQS_QUEUE_URL
 
 
 def get_file_metadata(bucket, key):
     try:
         response = s3_client.head_object(Bucket=bucket, Key=key)
+        logger.info(f"File metadata: {response}")
+
         return {
             'fileType': response['ContentType'],
             'fileSize': response['ContentLength'],
@@ -29,14 +42,31 @@ def write_to_dynamodb(table_name, item):
     table = dynamodb.Table(table_name)
     try:
         response = table.put_item(Item=item)
+        logger.info(f"Item written to DynamoDB: {response}")
+
         return response
     except ClientError as e:
         logger.error(f"Error writing to DynamoDB: {e}")
         return None
 
 
+def enqueue_message(queue_url, message_body):
+    try:
+        response = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(message_body)
+        )
+        logger.info(f"Message sent to SQS: {response}")
+    except ClientError as e:
+        logger.error(f"Error sending message to SQS: {e}")
+        return None
+
+
 def lambda_handler(event, context):
-    print(f"Received event: {event}")
+    logger.info(f"Received event: {event}")
+    logger.info(f"Environment variables: {os.environ}")
+
+    TABLE_NAME, SQS_QUEUE_URL = get_env_variables()
 
     for record in event['Records']:
         bucket_name = record['s3']['bucket']['name']
@@ -59,7 +89,6 @@ def lambda_handler(event, context):
         if not response:
             continue
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Processing complete.')
-    }
+        enqueue_message(SQS_QUEUE_URL, item)
+
+    logger.info("Processing complete.")
