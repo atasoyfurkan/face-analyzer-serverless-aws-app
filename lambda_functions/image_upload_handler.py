@@ -6,11 +6,10 @@ from datetime import datetime
 import logging
 
 logger = logging.getLogger()
-LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'WARNING')
-logger.setLevel(logging.getLevelName(LOGGING_LEVEL))
+logger.setLevel(os.getenv('LOGGING_LEVEL', 'WARNING'))
 
-dynamodb = boto3.resource('dynamodb')
 s3_client = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb')
 sqs_client = boto3.client('sqs')
 
 
@@ -76,7 +75,7 @@ def lambda_handler(event, context):
         if not metadata:
             continue
 
-        item = {
+        image_data = {
             'fileId': object_key,
             's3Bucket': bucket_name,
             's3Key': object_key,
@@ -85,10 +84,10 @@ def lambda_handler(event, context):
             'uploadTimestamp': datetime.utcnow().isoformat(),
         }
 
-        response = write_to_dynamodb(TABLE_NAME, item)
+        response = write_to_dynamodb(TABLE_NAME, image_data)
         if not response:
             continue
 
-        enqueue_message(SQS_QUEUE_URL, item)
+        enqueue_message(SQS_QUEUE_URL, image_data)
 
     logger.info("Processing complete.")

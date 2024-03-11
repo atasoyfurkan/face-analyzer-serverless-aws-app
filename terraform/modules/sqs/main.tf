@@ -18,9 +18,16 @@ resource "aws_sqs_queue_policy" "image_processing_queue_policy" {
       Resource : aws_sqs_queue.image_processing_queue.arn,
       Condition : {
         ArnEquals : {
-          "aws:SourceArn" : var.source_arn,
+          "aws:SourceArn" : var.source_lambda_arn,
         }
       }
     }]
   })
+}
+
+# Lambda trigger
+resource "aws_lambda_event_source_mapping" "sqs_event_source_mapping" {
+  event_source_arn = aws_sqs_queue.image_processing_queue.arn
+  function_name    = var.trigger_lambda_arn
+  batch_size       = 10
 }

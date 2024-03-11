@@ -25,7 +25,7 @@ resource "aws_s3_bucket_versioning" "upload_bucket_versioning" {
 resource "aws_lambda_permission" "allow_bucket" {
   statement_id  = "AllowExecutionFromS3Bucket"
   action        = "lambda:InvokeFunction"
-  function_name = var.lambda_invoke_arn
+  function_name = var.invoke_lambda_arn
   principal     = "s3.amazonaws.com"
   source_arn    = aws_s3_bucket.upload_bucket.arn
 }
@@ -34,7 +34,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
   bucket = aws_s3_bucket.upload_bucket.id
 
   lambda_function {
-    lambda_function_arn = var.lambda_invoke_arn
+    lambda_function_arn = var.invoke_lambda_arn
     events              = ["s3:ObjectCreated:*"]
     filter_prefix       = var.lambda_trigger_filter_prefix
     filter_suffix       = var.lambda_trigger_filter_suffix

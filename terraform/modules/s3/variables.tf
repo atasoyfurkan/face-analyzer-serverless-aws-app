@@ -3,7 +3,7 @@ variable "bucket_name" {
   type        = string
 }
 
-variable "lambda_invoke_arn" {
+variable "invoke_lambda_arn" {
   description = "The ARN of the Lambda function"
   type        = string
 }

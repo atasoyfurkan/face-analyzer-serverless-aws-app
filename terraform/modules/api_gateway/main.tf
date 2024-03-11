@@ -19,20 +19,21 @@ resource "aws_api_gateway_method" "api_method" {
   authorization = "NONE"
 }
 
+resource "aws_api_gateway_deployment" "api_deployment" {
+  depends_on = [aws_api_gateway_integration.lambda_integration]
+
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  stage_name  = var.stage_name
+}
+
+# Integration with Lambda
 resource "aws_api_gateway_integration" "lambda_integration" {
   rest_api_id             = aws_api_gateway_rest_api.api.id
   resource_id             = aws_api_gateway_resource.api_resource.id
   http_method             = aws_api_gateway_method.api_method.http_method
   type                    = "AWS_PROXY"
   integration_http_method = "POST"
-  uri                     = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.lambda_invoke_arn}/invocations"
-}
-
-resource "aws_api_gateway_deployment" "api_deployment" {
-  depends_on = [aws_api_gateway_integration.lambda_integration]
-
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  stage_name  = var.stage_name
+  uri                     = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${var.invoke_lambda_arn}/invocations"
 }
 
 resource "aws_lambda_permission" "api_gateway_lambda" {

@@ -2,7 +2,7 @@ variable "api_name" {
   description = "The name of the API Gateway"
 }
 
-variable "lambda_invoke_arn" {
+variable "invoke_lambda_arn" {
   description = "The ARN to invoke the Lambda"
 }
 
